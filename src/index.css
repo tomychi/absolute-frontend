@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@tailwind utilities;
+
+@layer base {
+    body {
+        font-family: "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    * {
+        border-color: rgb(229 231 235);
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+@theme {
+    --color-primary-50: #f3f4f6;
+    --color-primary-100: #e5e7eb;
+    --color-primary-200: #d1d5db;
+    --color-primary-300: #9ca3af;
+    --color-primary-400: #a855f7; /* violeta claro */
+    --color-primary-500: #8b5cf6; /* violeta medio */
+    --color-primary-600: #7c3aed; /* violeta */
+    --color-primary-700: #6d28d9; /* violeta oscuro */
+    --color-primary-800: #5b21b6; /* violeta muy oscuro */
+    --color-primary-900: #4c1d95; /* violeta ultra oscuro */
+
+    --color-success-50: #f0fdf4;
+    --color-success-100: #dcfce7;
+    --color-success-500: #22c55e;
+    --color-success-600: #16a34a;
+
+    --color-warning-50: #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+
+    --color-danger-50: #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+
+    --font-family-sans: "Inter", system-ui, sans-serif;
+}
+
+/* En tu archivo de estilos globales */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.bg-dashboard-gradient {
+    @apply bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900;
+}
+
+.bg-glass-card {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl rounded-xl;
+}
+
+.input {
+    @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500;
+}
