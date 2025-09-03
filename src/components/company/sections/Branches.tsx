@@ -1,4 +1,3 @@
-// src/components/company/sections/Branches.tsx
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -26,13 +25,21 @@ import { BRANCH_TYPES } from "../../../types/branch.types";
 import Button from "../../ui/Button";
 import Input from "../../ui/Input";
 import { clsx } from "clsx";
+import CreateBranchModal from "../modals/CreateBranchModal";
+import DeleteBranchModal from "../modals/DeleteBranchModal";
 
 const Branches = () => {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+
   const [filters, setFilters] = useState<BranchFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null);
+
   // Agregar estado para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -46,10 +53,16 @@ const Branches = () => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["branches", selectedCompany?.companyId, filters, currentPage],
+    queryKey: [
+      "branches",
+      selectedCompany?.companyId,
+      { ...filters, search: searchFilter },
+      currentPage,
+    ], // Usar searchFilter
     queryFn: () =>
       branchApi.getBranches(selectedCompany!.companyId, {
         ...filters,
+        search: searchFilter || undefined, // Usar searchFilter
         page: currentPage,
         limit: pageSize,
       }),
@@ -59,11 +72,6 @@ const Branches = () => {
   const branches = branchesResponse?.branches || [];
   const totalBranches = branchesResponse?.total || 0;
   const totalPages = branchesResponse?.totalPages || 1;
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setFilters((prev) => ({ ...prev, search: value || undefined }));
-  };
 
   const handleTypeFilter = (type: string) => {
     setCurrentPage(1); // AGREGAR ESTO
@@ -99,6 +107,25 @@ const Branches = () => {
     if (todayHours?.closed) return "Closed today";
 
     return `${todayHours?.open} - ${todayHours?.close}`;
+  };
+
+  const handleClearAll = () => {
+    setFilters({});
+    setSearchTerm("");
+    setSearchFilter(""); // AGREGAR ESTO
+    setCurrentPage(1);
+  };
+
+  const handleSearchBlur = () => {
+    setSearchFilter(searchTerm);
+    setCurrentPage(1);
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      setSearchFilter(searchTerm);
+      setCurrentPage(1);
+    }
   };
 
   if (isLoading) {
@@ -149,7 +176,9 @@ const Branches = () => {
             <Input
               placeholder="Search branches..."
               value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onBlur={handleSearchBlur}
+              onKeyPress={handleSearchKeyPress}
               leftIcon={<Search className="h-4 w-4" />}
             />
           </div>
@@ -191,14 +220,14 @@ const Branches = () => {
         </div>
       </div>
 
-      {(filters.search || filters.type || filters.isActive !== undefined) && (
+      {(searchFilter || filters.type || filters.isActive !== undefined) && (
         <div className="flex items-center gap-2 text-sm">
           <span className="text-gray-500 dark:text-gray-400">
             Active filters:
           </span>
-          {filters.search && (
+          {searchFilter && (
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-              Search: "{filters.search}"
+              Search: "{searchFilter}"
             </span>
           )}
           {filters.type && (
@@ -230,27 +259,20 @@ const Branches = () => {
           <Building2 className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
             {/* Mensaje dinámico basado en filtros */}
-            {filters.search || filters.type || filters.isActive !== undefined
-              ? "No branches match your filters"
-              : "No branches found"}
+            {searchFilter || filters.type || filters.isActive !== undefined
+              ? "Try adjusting your search criteria or clear filters."
+              : "Get started by creating your first branch."}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {filters.search || filters.type || filters.isActive !== undefined
+            {searchFilter || filters.type || filters.isActive !== undefined
               ? "Try adjusting your search criteria or clear filters."
               : "Get started by creating your first branch."}
           </p>
           <div className="mt-6 flex gap-2 justify-center">
-            {(filters.search ||
+            {(searchFilter ||
               filters.type ||
               filters.isActive !== undefined) && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setFilters({});
-                  setSearchTerm("");
-                  setCurrentPage(1);
-                }}
-              >
+              <Button variant="outline" onClick={() => handleClearAll()}>
                 Clear Filters
               </Button>
             )}
@@ -359,8 +381,8 @@ const Branches = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Handle delete
-                      toast.info("Delete functionality coming soon");
+                      setBranchToDelete(branch);
+                      setShowDeleteModal(true);
                     }}
                     leftIcon={<Trash2 className="h-3 w-3" />}
                     className="text-red-600 hover:text-red-700 hover:border-red-300"
@@ -460,15 +482,21 @@ const Branches = () => {
         </div>
       )}
 
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Create Branch Modal</h2>
-            <p>Modal component coming next...</p>
-            <Button onClick={() => setShowCreateModal(false)}>Close</Button>
-          </div>
-        </div>
-      )}
+      {/* Create Modal */}
+      <CreateBranchModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
+
+      {/* Delete Modal */}
+      <DeleteBranchModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setBranchToDelete(null);
+        }}
+        branch={branchToDelete}
+      />
     </div>
   );
 };

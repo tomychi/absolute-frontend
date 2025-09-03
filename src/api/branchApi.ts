@@ -66,10 +66,9 @@ export const branchApi = {
   },
 
   // Delete branch
-  deleteBranch: async (companyId: string, branchId: string): Promise<void> => {
-    await api.delete(`/api/companies/${companyId}/branches/${branchId}`);
+  deleteBranch: async (branchId: string): Promise<void> => {
+    await api.delete(`/api/branches/${branchId}`);
   },
-
   // Toggle branch status
   toggleBranchStatus: async (
     companyId: string,
