@@ -11,13 +11,26 @@ import {
 
 const dimensionsSchema = z
   .object({
-    length: z.number().positive("Length must be positive"),
-    width: z.number().positive("Width must be positive"),
-    height: z.number().positive("Height must be positive"),
-    weight: z.number().positive("Weight must be positive"),
-    unit: z.string().min(1, "Unit is required"),
+    length: z.preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().positive().optional(),
+    ),
+    width: z.preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().positive().optional(),
+    ),
+    height: z.preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().positive().optional(),
+    ),
+    weight: z.preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().positive().optional(),
+    ),
+    unit: z.string().optional(),
   })
-  .optional();
+  .optional()
+  .nullable();
 
 const metadataSchema = z
   .object({
@@ -59,8 +72,8 @@ export const createProductSchema = z
       .min(2, "SKU must be at least 2 characters")
       .max(50, "SKU must be less than 50 characters")
       .regex(
-        /^[A-Z0-9_-]+$/i,
-        "SKU can only contain letters, numbers, hyphens, and underscores",
+        /^[A-Z0-9_-]+$/,
+        "SKU must contain only uppercase letters, numbers, hyphens, and underscores",
       ),
 
     description: z
@@ -121,13 +134,35 @@ export const createProductSchema = z
     dimensions: dimensionsSchema,
     metadata: metadataSchema,
 
-    imageUrl: z.string().url("Please enter a valid image URL").optional(),
+    imageUrl: z
+      .string()
+      .url("Please enter a valid image URL")
+      .optional()
+      .or(z.literal("")),
 
     barcode: z
       .string()
       .regex(/^[0-9]{8,13}$/, "Barcode must be 8-13 digits")
-      .optional(),
+      .optional()
+      .or(z.literal("")),
   })
+  .refine(
+    (data) => {
+      // Digital products and services cannot have inventory tracking
+      if (
+        (data.type === "digital" || data.type === "service") &&
+        data.trackInventory
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Digital products and services cannot have inventory tracking enabled",
+      path: ["trackInventory"],
+    },
+  )
   .refine(
     (data) => {
       // Validate cost is less than price
